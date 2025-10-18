@@ -1,0 +1,92 @@
+<% layout("/boilerplate") %>
+<body>
+<% if (success && success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= success[0] %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<% } %>
+<% if (error && error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= error[0] %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<% } %>
+
+<h1>Listing Details</h1>
+
+<div class="card">
+    <img src="<%= list.image.url || 'https://images.unsplash.com/photo-1518684079-3c830dcef090?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZHViYWl8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60' %>" alt="Listing Image">
+    <ul><strong>Place:</strong> <%= list.title %></ul>
+    <p><strong>Owner:</strong> <%= list.owner.username %></p>
+    <p class="description"><strong>Description:</strong> <%- list.description.replace(/\n/g, "<br>") %></p>
+    <ul><strong>Price:</strong> ₹<%= list.price %></ul>
+    <ul><strong>Location:</strong> <%= list.location %></ul>
+    <ul><strong>Country:</strong> <%= list.country %></ul>
+
+    <% if (currentUser && list.owner.equals(currentUser._id)) { %>
+        <div class="button-group">
+            <form action="/listings/<%= list._id %>/EDIT">
+                <button>EDIT</button>
+            </form>
+            <form action="/listings/<%= list._id %>?_method=DELETE" method="POST">
+                <button type="submit">DELETE</button>
+            </form>
+        </div>
+    <% } %>
+</div>
+
+<h2>Reviews</h2>
+<% if (list.reviews.length === 0) { %>
+    <p>No reviews yet. Be the first to leave one!</p>
+<% } %>
+
+<div class="row">
+    <% for (let review of list.reviews) { %>
+        <div class="col-md-6">
+            <div class="review-card text-center">
+                <% if (review.author) { %>
+                    <ul><strong>Reviewer:</strong> <%= review.author.username %></ul>
+                <% } %>
+                <ul><strong>Comment:</strong> <%= review.comment %></ul>
+                <p class="starability-result" data-rating="<%= review.rating %>">
+                    Rated: <%= review.rating %> stars
+                </p>
+
+                <% if (currentUser && review.author && review.author._id.equals(currentUser._id)) { %>
+                    <form method="POST" action="/listings/<%= list._id %>/reviews/<%= review._id %>?_method=DELETE">
+                        <button type="submit">Delete</button>
+                    </form>
+                <% } %>
+            </div>
+        </div>
+    <% } %>
+</div>
+
+<% if (currentUser) { %>
+    <div class="card col-5 mb-3 ms-3">
+        <h3>Leave a Review</h3>
+        <form action="/listings/<%= list._id %>/reviews" method="POST">
+            <fieldset class="starability-slot">
+                <legend>Rating:</legend>
+                <input type="radio" id="no-rate" class="input-no-rate" name="review[rating]" value="0" checked aria-label="No rating." />
+                <input type="radio" id="first-rate1" name="review[rating]" value="1" />
+                <label for="first-rate1" title="Terrible">1 star</label>
+                <input type="radio" id="first-rate2" name="review[rating]" value="2" />
+                <label for="first-rate2" title="Not good">2 stars</label>
+                <input type="radio" id="first-rate3" name="review[rating]" value="3" />
+                <label for="first-rate3" title="Average">3 stars</label>
+                <input type="radio" id="first-rate4" name="review[rating]" value="4" />
+                <label for="first-rate4" title="Very good">4 stars</label>
+                <input type="radio" id="first-rate5" name="review[rating]" value="5" />
+                <label for="first-rate5" title="Amazing">5 stars</label>
+            </fieldset>
+
+            <label for="comments">Comments</label>
+            <textarea name="review[comment]" id="comments" cols="30" rows="5" required></textarea>
+
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+<% } %>
+</body>
