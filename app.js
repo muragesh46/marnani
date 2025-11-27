@@ -76,7 +76,7 @@ app.use("/listings/:id/reviews", reviews);
 app.use("/user", users)
 
 app.get('/', function (req, res) {
-    res.send('Welcome to my website!');
+    res.redirect('/listings');
 });
 
 mongoose.connect(dburl)
