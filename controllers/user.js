@@ -40,7 +40,7 @@ module.exports.login=(req, res, next) => {
             req.flash('success', 'Welcome back!');
 
             const redirectUrl = res.locals.redirecturl || '/listings';
-            delete req.session.redirecturl; // clear after use
+            delete req.session.redirecturl;  
             return res.redirect(redirectUrl);
         });
     })(req, res, next);

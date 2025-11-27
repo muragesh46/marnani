@@ -3,7 +3,7 @@ var router = express.Router();
 const listings = require("./listing");
 const initdata = require("./data");
 const mongoose = require("mongoose");
-/* GET home page. */
+ 
 
 async function main() {
     await mongoose.connect('mongodb://127.0.0.1:27017/myapp');

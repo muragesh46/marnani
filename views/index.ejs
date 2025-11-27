@@ -1,55 +1,975 @@
 <% layout("/boilerplate")%>
-<body>
-<% if (success && success.length > 0) { %>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <%= success[0] %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-<% } %>
 
-<% if (deleted && deleted.length > 0) { %>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <%= deleted[0] %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-<% } %>
+    <body>
 
-<% if (error && error.length > 0) { %>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <%= error[0] %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-<% } %>
-   <div class="row">
-       <% for (let listing of alllistings) { %>
-
-           <div class="col-lg-3 col-md-3 col-sm-6 col-12 mb-4" id="cards" >
-               <a href="/listings/<%=listing._id%>" style="text-decoration: none">
-               <div class="card h-100">
-                   <img src="<%= listing.image.url %>" class="card-img-top" alt="listing_image" style="height: 15rem" >
-                   <div class="card-body">
-                       <p class="card-text"><%= listing.title %></p>
-                       <p class="card-text">₹<%= listing.price %></p>
-                       <p class="card-text"><%= listing.location %></p>
-                       <p class="card-text">
-                         <% if (listing.reviews && listing.reviews.length > 0) { %>
-                           <%
-                             let sum = 0;
-                             for (let r of listing.reviews) { sum += r.rating; }
-                             let avg = (sum / listing.reviews.length).toFixed(1);
-                           %>
-                           <%= avg %> ★/5
-                         <% } else { %>
-                           No reviews yet.
-                         <% } %>
-                       </p>
-                   </div>
-               </div>
-               </a>
-           </div>
-
-       <% } %>
-   </div>
+        
+        <div class="search-bar-container">
+            <div class="search-bar">
+                <div class="search-input location-search-wrapper">
+                    <label>Where</label>
+                    <input type="text" placeholder="Search destinations" id="search-location" autocomplete="off">
+                    
+                    <div class="search-suggestions" id="location-suggestions" style="display: none;">
+                        
+                    </div>
+                </div>
+                <div class="search-divider"></div>
+                <div class="search-input search-input-dates">
+                    <label>Dates</label>
+                    <input type="text" placeholder="Add dates" class="search-date-picker" id="dates-search">
+                </div>
+                <div class="search-divider"></div>
+                <div class="search-input-guests">
+                    <label>Who</label>
+                    <input type="text" placeholder="Add guests" id="search-guests" readonly>
+                </div>
+                <button class="search-btn" id="search-submit">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>Search</span>
+                </button>
+            </div>
+        </div>
 
 
-</body>
+        <div id="filters">
+            <a href="/listings?category=Trending" class="filter">
+                <div><i class="fa-solid fa-fire"></i></div>
+                <p>Trending</p>
+            </a>
+            <a href="/listings?category=Rooms" class="filter">
+                <div><i class="fa-solid fa-bed"></i></div>
+                <p>Rooms</p>
+            </a>
+            <a href="/listings?category=Iconic Cities" class="filter">
+                <div><i class="fa-solid fa-mountain-city"></i></div>
+                <p>Iconic Cities</p>
+            </a>
+            <a href="/listings?category=Mountains" class="filter">
+                <div><i class="fa-solid fa-mountain"></i></div>
+                <p>Mountains</p>
+            </a>
+            <a href="/listings?category=Castles" class="filter">
+                <div><i class="fa-brands fa-fort-awesome"></i></div>
+                <p>Castles</p>
+            </a>
+            <a href="/listings?category=Amazing Pools" class="filter">
+                <div><i class="fa-solid fa-person-swimming"></i></div>
+                <p>Amazing Pools</p>
+            </a>
+            <a href="/listings?category=Camping" class="filter">
+                <div><i class="fa-solid fa-campground"></i></div>
+                <p>Camping</p>
+            </a>
+            <a href="/listings?category=Farms" class="filter">
+                <div><i class="fa-solid fa-cow"></i></div>
+                <p>Farms</p>
+            </a>
+            <a href="/listings?category=Arctic" class="filter">
+                <div><i class="fa-regular fa-snowflake"></i></div>
+                <p>Arctic</p>
+            </a>
+            <a href="/listings?category=Domes" class="filter">
+                <div><i class="fa-solid fa-igloo"></i></div>
+                <p>Domes</p>
+            </a>
+            <a href="/listings?category=Boats" class="filter">
+                <div><i class="fa-solid fa-ship"></i></div>
+                <p>Boats</p>
+            </a>
+        </div>
+
+        
+        <div class="filter-sort-container">
+            <button class="filter-toggle-btn" id="filter-toggle">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Filters</span>
+            </button>
+            <div class="sort-dropdown">
+                <button class="sort-btn" id="sort-btn">
+                    <span>Sort: <b id="sort-label">Recommended</b></span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="sort-menu" id="sort-menu">
+                    <button class="sort-option" data-sort="recommended">Recommended</button>
+                    <button class="sort-option" data-sort="price-low">Price: Low to High</button>
+                    <button class="sort-option" data-sort="price-high">Price: High to Low</button>
+                    <button class="sort-option" data-sort="rating">Top Rated</button>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="filter-panel" id="filter-panel">
+            <div class="filter-panel-header">
+                <h3>Filters</h3>
+                <button class="close-filters" id="close-filters">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="filter-panel-content">
+                
+                <div class="filter-group">
+                    <h4>Rooms and beds</h4>
+                    <div class="counter-section">
+                        <div class="counter-row">
+                            <span>Bedrooms</span>
+                            <div class="counter">
+                                <button class="counter-btn" data-action="decrease" data-type="bedrooms">-</button>
+                                <span id="bedrooms-count">0</span>
+                                <button class="counter-btn" data-action="increase" data-type="bedrooms">+</button>
+                            </div>
+                        </div>
+                        <div class="counter-row">
+                            <span>Beds</span>
+                            <div class="counter">
+                                <button class="counter-btn" data-action="decrease" data-type="beds">-</button>
+                                <span id="beds-count">0</span>
+                                <button class="counter-btn" data-action="increase" data-type="beds">+</button>
+                            </div>
+                        </div>
+                        <div class="counter-row">
+                            <span>Guests</span>
+                            <div class="counter">
+                                <button class="counter-btn" data-action="decrease" data-type="guests">-</button>
+                                <span id="guests-count">0</span>
+                                <button class="counter-btn" data-action="increase" data-type="guests">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div class="filter-group">
+                    <h4>Amenities</h4>
+                    <div class="checkbox-group amenities-grid">
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" value="WiFi" class="amenity-filter">
+                            <i class="fa-solid fa-wifi"></i>
+                            <span>WiFi</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" value="Kitchen" class="amenity-filter">
+                            <i class="fa-solid fa-kitchen-set"></i>
+                            <span>Kitchen</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" value="Free parking" class="amenity-filter">
+                            <i class="fa-solid fa-car"></i>
+                            <span>Parking</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" value="Air conditioning" class="amenity-filter">
+                            <i class="fa-solid fa-wind"></i>
+                            <span>AC</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" value="Pool" class="amenity-filter">
+                            <i class="fa-solid fa-person-swimming"></i>
+                            <span>Pool</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" value="Gym" class="amenity-filter">
+                            <i class="fa-solid fa-dumbbell"></i>
+                            <span>Gym</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" value="Washer" class="amenity-filter">
+                            <i class="fa-solid fa-shirt"></i>
+                            <span>Washer</span>
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" value="TV" class="amenity-filter">
+                            <i class="fa-solid fa-tv"></i>
+                            <span>TV</span>
+                        </label>
+                    </div>
+                </div>
+
+                
+                <div class="filter-group">
+                    <h4>Price Range</h4>
+                    <div class="price-range">
+                        <div class="price-inputs">
+                            <div class="price-input-group">
+                                <label>Min</label>
+                                <input type="number" id="min-price" value="0" placeholder="₹0">
+                            </div>
+                            <div class="price-separator">-</div>
+                            <div class="price-input-group">
+                                <label>Max</label>
+                                <input type="number" id="max-price" value="50000" placeholder="₹50000">
+                            </div>
+                        </div>
+                        <input type="range" id="price-slider" min="0" max="50000" step="1000" value="50000"
+                            class="price-slider">
+                        <div class="price-values">
+                            <span>₹0</span>
+                            <span id="current-max">₹50,000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-actions">
+                    <button class="btn-clear-filters">Clear all</button>
+                    <button class="btn-apply-filters">Show results</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row row-cols-lg-4 row-cols-md-3 row-cols-sm-2 row-cols-1 mt-3">
+            <% for (let listing of alllistings) { %>
+                <a href="/listings/<%=listing._id%>" class="listing-link">
+                    <div class="card listing-card" data-price="<%= listing.price || 0 %>"
+                        data-keywords="<%= (listing.title + ' ' + listing.description + ' ' + listing.location).toLowerCase() %>">
+                        <div class="image-wrapper">
+                            <img src="<%= listing.image.url %>" class="card-img-top" alt="listing_image"
+                                style="height: 20rem">
+                            <button class="wishlist-btn" data-id="<%=listing._id%>"
+                                onclick="event.preventDefault(); toggleWishlist(this);">
+                                <i class="fa-regular fa-heart"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="listing-title">
+                                <%= listing.title %>
+                            </h5>
+                            <p class="listing-location">
+                                <%= listing.location %>, <%= listing.country %>
+                            </p>
+                            <p class="listing-price">
+                                <% if (listing.price) { %>
+                                    &#8377;<%= listing.price.toLocaleString("en-IN") %> <span
+                                            style="font-weight: 400">night</span>
+                                        <% } else { %>
+                                            Price on request
+                                            <% } %>
+                            </p>
+
+                            <% if (listing.reviews && listing.reviews.length> 0) { %>
+                                <% let sum=0; for (let r of listing.reviews) { sum +=r.rating; } let avg=(sum /
+                                    listing.reviews.length).toFixed(1); %>
+                                    <div class="listing-rating">
+                                        <i class="fa-solid fa-star"></i> <span>
+                                            <%= avg %>
+                                        </span>
+                                    </div>
+                                    <% } else { %>
+                                        <div class="listing-rating text-muted">
+                                            <i class="fa-regular fa-star"></i> <span>New</span>
+                                        </div>
+                                        <% } %>
+                        </div>
+                    </div>
+                </a>
+                <% } %>
+        </div>
+
+
+        
+        <div class="guests-modal" id="guests-modal">
+            <div class="guests-modal-content">
+                <div class="guest-row">
+                    <div>
+                        <h6>Adults</h6>
+                        <p>Ages 13 or above</p>
+                    </div>
+                    <div class="counter">
+                        <button class="counter-btn" data-action="decrease" data-type="adults">-</button>
+                        <span id="adults-count">2</span>
+                        <button class="counter-btn" data-action="increase" data-type="adults">+</button>
+                    </div>
+                </div>
+                <div class="guest-row">
+                    <div>
+                        <h6>Children</h6>
+                        <p>Ages 2-12</p>
+                    </div>
+                    <div class="counter">
+                        <button class="counter-btn" data-action="decrease" data-type="children">-</button>
+                        <span id="children-count">0</span>
+                        <button class="counter-btn" data-action="increase" data-type="children">+</button>
+                    </div>
+                </div>
+                <div class="guest-row">
+                    <div>
+                        <h6>Infants</h6>
+                        <p>Under 2</p>
+                    </div>
+                    <div class="counter">
+                        <button class="counter-btn" data-action="decrease" data-type="infants">-</button>
+                        <span id="infants-count">0</span>
+                        <button class="counter-btn" data-action="increase" data-type="infants">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+
+            const searchDatePickers = flatpickr(".search-date-picker", {
+                minDate: "today",
+                dateFormat: "M d",
+                mode: "range",
+                conjunction: " - ",
+                showMonths: 2,
+                onClose: function (selectedDates, dateStr, instance) {
+
+                    if (selectedDates.length === 2) {
+                        const checkIn = selectedDates[0];
+                        const checkOut = selectedDates[1];
+
+
+                        const location = document.getElementById('search-location').value;
+                        const guestsInput = document.getElementById('search-guests').value;
+
+
+                        const params = new URLSearchParams();
+                        if (location) params.set('location', location);
+                        if (checkIn) params.set('checkIn', checkIn.toISOString().split('T')[0]);
+                        if (checkOut) params.set('checkOut', checkOut.toISOString().split('T')[0]);
+                        if (guests.adults) params.set('guests', guests.adults + guests.children);
+
+
+                        const toast = document.createElement("div");
+                        toast.className = "toast-notification success";
+                        toast.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i><span>Searching available properties...</span>`;
+                        document.querySelector(".toast-container").appendChild(toast);
+
+
+                        setTimeout(() => {
+                            window.location.href = `/listings?${params.toString()}`;
+                        }, 500);
+                    }
+                }
+            });
+
+
+            let guests = { adults: 2, children: 0, infants: 0 };
+            const guestsModal = document.getElementById('guests-modal');
+            const guestsInput = document.getElementById('search-guests');
+
+            function updateGuestsDisplay() {
+                const total = guests.adults + guests.children;
+                const guestText = total === 1 ? '1 guest' : `${total} guests`;
+                const infantText = guests.infants > 0 ? `, ${guests.infants} infant${guests.infants > 1 ? 's' : ''}` : '';
+                guestsInput.value = guestText + infantText;
+            }
+
+            guestsInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+                guestsModal.style.display = guestsModal.style.display === 'block' ? 'none' : 'block';
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!guestsModal.contains(e.target) && e.target !== guestsInput) {
+                    guestsModal.style.display = 'none';
+                }
+            });
+
+            document.querySelectorAll('.counter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const action = btn.dataset.action;
+                    const type = btn.dataset.type;
+
+                    if (action === 'increase') {
+                        guests[type]++;
+                    } else if (action === 'decrease' && guests[type] > 0) {
+                        if (type === 'adults' && guests[type] === 1) return;
+                        guests[type]--;
+                    }
+
+                    document.getElementById(`${type}-count`).textContent = guests[type];
+                    updateGuestsDisplay();
+                });
+            });
+
+            updateGuestsDisplay();
+
+
+            const popularDestinations = [
+                'Mumbai', 'Delhi', 'Goa', 'Bangalore', 'Jaipur', 'Kerala',
+                'Udaipur', 'Shimla', 'Manali', 'Rishikesh', 'Agra', 'Varanasi',
+                'Kolkata', 'Chennai', 'Pune', 'Ahmedabad', 'Hyderabad',
+                'Mysore', 'Darjeeling', 'Ooty', 'Kashmir', 'Andaman', 'Leh',
+                'Ladakh', 'Amritsar', 'Pushkar', 'Jodhpur', 'Coorg', 'Hampi'
+            ];
+
+            const searchLocation = document.getElementById('search-location');
+            const locationSuggestions = document.getElementById('location-suggestions');
+
+            searchLocation.addEventListener('input', (e) => {
+                const query = e.target.value.trim().toLowerCase();
+
+                if (query.length === 0) {
+                    locationSuggestions.style.display = 'none';
+                    return;
+                }
+
+
+                const matches = popularDestinations.filter(dest =>
+                    dest.toLowerCase().includes(query)
+                );
+
+                if (matches.length > 0) {
+                    locationSuggestions.innerHTML = matches.slice(0, 8).map(dest => `
+                        <div class="suggestion-item" onclick="selectDestination('${dest}')">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <span>${dest}</span>
+                        </div>
+                    `).join('');
+                    locationSuggestions.style.display = 'block';
+                } else {
+                    locationSuggestions.style.display = 'none';
+                }
+            });
+
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.location-search-wrapper')) {
+                    locationSuggestions.style.display = 'none';
+                }
+            });
+
+
+            function selectDestination(destination) {
+                document.getElementById('search-location').value = destination;
+                locationSuggestions.style.display = 'none';
+            }
+
+
+            document.getElementById('search-submit').addEventListener('click', () => {
+                const location = document.getElementById('search-location').value;
+                const dateInputs = document.querySelectorAll('.search-date-picker');
+
+
+                const params = new URLSearchParams();
+                if (location) params.set('location', location);
+                if (guests.adults + guests.children > 0) {
+                    params.set('guests', guests.adults + guests.children);
+                }
+
+
+                const toast = document.createElement("div");
+                toast.className = "toast-notification success";
+                toast.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i><span>Searching for properties${location ? ' in ' + location : ''}...</span>`;
+                document.querySelector(".toast-container").appendChild(toast);
+
+                setTimeout(() => {
+                    window.location.href = `/listings?${params.toString()}`;
+                }, 500);
+            });
+
+
+            function toggleWishlist(btn) {
+
+                <% if (!currentUser) { %>
+                    const toast = document.createElement("div");
+                    toast.className = "toast-notification error";
+                    toast.innerHTML = `<i class="fa-solid fa-lock"></i><span>Please login to add to wishlist</span>`;
+                    document.querySelector(".toast-container").appendChild(toast);
+
+                    setTimeout(() => {
+                        toast.style.opacity = '0';
+                        toast.style.transform = 'translateX(100%)';
+                        setTimeout(() => {
+                            toast.remove();
+                            window.location.href = '/user/login';
+                        }, 1500);
+                    }, 2000);
+                    return;
+                <% } %>
+
+                const icon = btn.querySelector('i');
+                const listingId = btn.dataset.id;
+
+                if (icon.classList.contains('fa-regular')) {
+                    icon.classList.remove('fa-regular');
+                    icon.classList.add('fa-solid');
+                    btn.classList.add('wishlisted');
+
+
+                    const toast = document.createElement("div");
+                    toast.className = "toast-notification success";
+                    toast.innerHTML = `<i class="fa-solid fa-heart"></i><span>Added to wishlist</span>`;
+                    document.querySelector(".toast-container").appendChild(toast);
+
+                    setTimeout(() => {
+                        toast.style.opacity = '0';
+                        toast.style.transform = 'translateX(100%)';
+                        setTimeout(() => toast.remove(), 500);
+                    }, 2000);
+
+
+                    let wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+                    if (!wishlist.includes(listingId)) {
+                        wishlist.push(listingId);
+                        localStorage.setItem('wishlist', JSON.stringify(wishlist));
+                    }
+                } else {
+                    icon.classList.remove('fa-solid');
+                    icon.classList.add('fa-regular');
+                    btn.classList.remove('wishlisted');
+
+
+                    let wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+                    wishlist = wishlist.filter(id => id !== listingId);
+                    localStorage.setItem('wishlist', JSON.stringify(wishlist));
+                }
+            }
+
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+                wishlist.forEach(id => {
+                    const btn = document.querySelector(`[data-id="${id}"]`);
+                    if (btn) {
+                        const icon = btn.querySelector('i');
+                        icon.classList.remove('fa-regular');
+                        icon.classList.add('fa-solid');
+                        btn.classList.add('wishlisted');
+                    }
+                });
+            });
+
+
+            const filterPanel = document.getElementById('filter-panel');
+            const filterToggle = document.getElementById('filter-toggle');
+            const closeFilters = document.getElementById('close-filters');
+            const sortBtn = document.getElementById('sort-btn');
+            const sortMenu = document.getElementById('sort-menu');
+            const priceSlider = document.getElementById('price-slider');
+            const maxPriceInput = document.getElementById('max-price');
+            const currentMax = document.getElementById('current-max');
+
+
+            filterToggle.addEventListener('click', () => {
+                filterPanel.classList.add('active');
+            });
+
+            closeFilters.addEventListener('click', () => {
+                filterPanel.classList.remove('active');
+            });
+
+
+            filterPanel.addEventListener('click', (e) => {
+                if (e.target === filterPanel) {
+                    filterPanel.classList.remove('active');
+                }
+            });
+
+
+            sortBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sortMenu.classList.toggle('active');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!sortMenu.contains(e.target) && e.target !== sortBtn) {
+                    sortMenu.classList.remove('active');
+                }
+            });
+
+
+            document.querySelectorAll('.sort-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const sortType = option.dataset.sort;
+                    document.getElementById('sort-label').textContent = option.textContent;
+                    sortMenu.classList.remove('active');
+
+
+                    const urlParams = new URLSearchParams(window.location.search);
+
+
+                    if (sortType === 'recommended') {
+                        urlParams.delete('sort');
+                    } else {
+                        urlParams.set('sort', sortType);
+                    }
+
+
+                    const toast = document.createElement("div");
+                    toast.className = "toast-notification success";
+                    toast.innerHTML = `<i class="fa-solid fa-filter"></i><span>Sorting by ${option.textContent}...</span>`;
+                    document.querySelector(".toast-container").appendChild(toast);
+
+
+                    const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                    window.location.href = newUrl;
+                });
+            });
+
+
+            priceSlider.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value);
+                maxPriceInput.value = value;
+                currentMax.textContent = `₹${value.toLocaleString('en-IN')}`;
+            });
+
+            maxPriceInput.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value);
+                if (value >= 0 && value <= 50000) {
+                    priceSlider.value = value;
+                    currentMax.textContent = `₹${value.toLocaleString('en-IN')}`;
+                }
+            });
+
+
+            let filterCounts = { bedrooms: 0, beds: 0, guests: 0 };
+
+            document.querySelectorAll('.filter-panel .counter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const action = btn.dataset.action;
+                    const type = btn.dataset.type;
+
+                    if (action === 'increase') {
+                        filterCounts[type]++;
+                    } else if (action === 'decrease' && filterCounts[type] > 0) {
+                        filterCounts[type]--;
+                    }
+
+                    document.getElementById(`${type}-count`).textContent = filterCounts[type];
+                });
+            });
+
+
+            document.querySelector('.btn-apply-filters').addEventListener('click', () => {
+                const minPrice = document.getElementById('min-price').value;
+                const maxPrice = document.getElementById('max-price').value;
+
+
+                const selectedAmenities = Array.from(document.querySelectorAll('.amenity-filter:checked'))
+                    .map(cb => cb.value);
+
+                filterPanel.classList.remove('active');
+
+
+                const urlParams = new URLSearchParams(window.location.search);
+
+
+                if (minPrice && minPrice !== '0') {
+                    urlParams.set('minPrice', minPrice);
+                } else {
+                    urlParams.delete('minPrice');
+                }
+
+                if (maxPrice && maxPrice !== '50000') {
+                    urlParams.set('maxPrice', maxPrice);
+                } else {
+                    urlParams.delete('maxPrice');
+                }
+
+                if (filterCounts.bedrooms > 0) {
+                    urlParams.set('bedrooms', filterCounts.bedrooms);
+                } else {
+                    urlParams.delete('bedrooms');
+                }
+
+                if (filterCounts.beds > 0) {
+                    urlParams.set('beds', filterCounts.beds);
+                } else {
+                    urlParams.delete('beds');
+                }
+
+                if (filterCounts.guests > 0) {
+                    urlParams.set('guests', filterCounts.guests);
+                } else {
+                    urlParams.delete('guests');
+                }
+
+
+                urlParams.delete('amenities');
+                selectedAmenities.forEach(amenity => {
+                    urlParams.append('amenities', amenity);
+                });
+
+                const toast = document.createElement("div");
+                toast.className = "toast-notification success";
+                toast.innerHTML = `<i class="fa-solid fa-check"></i><span>Applying filters...</span>`;
+                document.querySelector(".toast-container").appendChild(toast);
+
+
+                setTimeout(() => {
+                    const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                    window.location.href = newUrl;
+                }, 300);
+            });
+
+
+            document.querySelector('.btn-clear-filters').addEventListener('click', () => {
+                document.getElementById('min-price').value = 0;
+                document.getElementById('max-price').value = 50000;
+                priceSlider.value = 50000;
+                currentMax.textContent = '₹50,000';
+
+
+                filterCounts = { bedrooms: 0, beds: 0, guests: 0 };
+                document.getElementById('bedrooms-count').textContent = 0;
+                document.getElementById('beds-count').textContent = 0;
+                document.getElementById('guests-count').textContent = 0;
+
+
+                document.querySelectorAll('.amenity-filter').forEach(cb => cb.checked = false);
+            });
+
+
+            let searchDebounceTimer;
+            const searchLocationInput = document.getElementById('search-location');
+            const allListingCards = document.querySelectorAll('.listing-card');
+
+            console.log('Search initialized. Found', allListingCards.length, 'listing cards');
+
+            function filterListings(query) {
+                const searchQuery = query.toLowerCase().trim();
+                let visibleCount = 0;
+
+                console.log('Filtering for:', searchQuery);
+
+
+                if (searchQuery.length === 0) {
+                    allListingCards.forEach(card => {
+                        const link = card.closest('.listing-link');
+                        link.style.display = 'block';
+                        visibleCount++;
+                    });
+
+
+                    const noResults = document.getElementById('no-results-message');
+                    if (noResults) noResults.remove();
+                    console.log('Empty search - showing all', visibleCount, 'listings');
+                    return;
+                }
+
+
+                allListingCards.forEach(card => {
+                    const link = card.closest('.listing-link');
+                    const title = card.querySelector('.listing-title')?.textContent.toLowerCase().trim() || '';
+                    const location = card.querySelector('.listing-location')?.textContent.toLowerCase().trim() || '';
+                    const combinedText = (title + ' ' + location).toLowerCase();
+
+
+                    const matches = combinedText.includes(searchQuery);
+
+                    if (matches) {
+                        link.style.display = 'block';
+                        card.style.animation = 'fadeInUp 0.5s ease';
+                        visibleCount++;
+                        console.log('✓ Match found:', title);
+                    } else {
+                        link.style.display = 'none';
+                    }
+                });
+
+                console.log('Search complete. Visible:', visibleCount, 'listings');
+
+
+                const noResults = document.getElementById('no-results-message');
+                if (visibleCount === 0) {
+                    if (!noResults) {
+                        const message = document.createElement('div');
+                        message.id = 'no-results-message';
+                        message.className = 'no-results-message';
+                        message.innerHTML = `
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <h3>No properties found</h3>
+                            <p>We couldn't find any properties matching "${query}". Try a different search!</p>
+                        `;
+                        document.querySelector('.row').appendChild(message);
+                    }
+                } else if (noResults) {
+                    noResults.remove();
+                }
+            }
+
+
+            if (searchLocationInput) {
+                searchLocationInput.addEventListener('input', (e) => {
+                    console.log('Input event triggered:', e.target.value);
+                    clearTimeout(searchDebounceTimer);
+                    searchDebounceTimer = setTimeout(() => {
+                        filterListings(e.target.value);
+                    }, 300);
+                });
+                console.log('Search input listener attached');
+            } else {
+                console.error('Search input not found!');
+            }
+
+
+
+
+            const categoryFilters = document.querySelectorAll('.filter');
+            categoryFilters.forEach(filter => {
+                filter.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const url = new URL(filter.href);
+                    const category = url.searchParams.get('category');
+
+                    console.log('Category clicked:', category);
+
+
+                    filterByCategory(category);
+
+
+                    categoryFilters.forEach(f => f.classList.remove('active'));
+                    filter.classList.add('active');
+                });
+            });
+
+            function filterByCategory(category) {
+                let visibleCount = 0;
+                const categoryLower = category.toLowerCase();
+
+                allListingCards.forEach(card => {
+                    const link = card.closest('.listing-link');
+                    const keywords = card.dataset.keywords || '';
+
+
+                    let matches = false;
+                    if (categoryLower.includes('mountain')) {
+                        matches = keywords.includes('mountain') || keywords.includes('chalet') || keywords.includes('ski') || keywords.includes('cabin');
+                    } else if (categoryLower.includes('beach') || categoryLower.includes('trending')) {
+                        matches = keywords.includes('beach') || keywords.includes('ocean') || keywords.includes('coast') || keywords.includes('island');
+                    } else if (categoryLower.includes('pool')) {
+                        matches = keywords.includes('pool') || keywords.includes('villa') || keywords.includes('luxury');
+                    } else if (categoryLower.includes('castle')) {
+                        matches = keywords.includes('castle') || keywords.includes('historic');
+                    } else if (categoryLower.includes('camping')) {
+                        matches = keywords.includes('cabin') || keywords.includes('treehouse') || keywords.includes('camp');
+                    } else if (categoryLower.includes('farm')) {
+                        matches = keywords.includes('farm') || keywords.includes('rustic') || keywords.includes('countryside');
+                    } else if (categoryLower.includes('arctic')) {
+                        matches = keywords.includes('ski') || keywords.includes('snow') || keywords.includes('chalet');
+                    } else if (categoryLower.includes('city') || categoryLower.includes('iconic')) {
+                        matches = keywords.includes('city') || keywords.includes('downtown') || keywords.includes('urban') || keywords.includes('loft') || keywords.includes('penthouse');
+                    } else if (categoryLower.includes('room')) {
+                        matches = keywords.includes('apartment') || keywords.includes('loft') || keywords.includes('room');
+                    } else {
+                        matches = true;
+                    }
+
+                    if (matches) {
+                        link.style.display = 'block';
+                        card.style.animation = 'fadeInUp 0.5s ease';
+                        visibleCount++;
+                    } else {
+                        link.style.display = 'none';
+                    }
+                });
+
+                console.log(`Category filter complete. Visible: ${visibleCount} listings`);
+
+
+                updateNoResultsMessage(visibleCount, `No properties found in ${category}`);
+            }
+
+
+
+
+            const applyFiltersBtn = document.querySelector('.btn-apply-filters');
+            const clearFiltersBtn = document.querySelector('.btn-clear-filters');
+
+
+
+            applyFiltersBtn.addEventListener('click', () => {
+                console.log('Applying filters...');
+
+
+                const minPrice = parseInt(document.getElementById('min-price').value) || 0;
+                const maxPrice = parseInt(document.getElementById('max-price').value) || 50000;
+                const bedrooms = parseInt(document.getElementById('bedrooms-count').textContent) || 0;
+                const beds = parseInt(document.getElementById('beds-count').textContent) || 0;
+                const guests = parseInt(document.getElementById('guests-count').textContent) || 0;
+
+
+                const selectedAmenities = Array.from(document.querySelectorAll('.amenity-filter:checked'))
+                    .map(cb => cb.value.toLowerCase());
+
+                console.log('Filter values:', { minPrice, maxPrice, bedrooms, beds, guests, selectedAmenities });
+
+                let visibleCount = 0;
+
+                allListingCards.forEach(card => {
+                    const link = card.closest('.listing-link');
+                    const price = parseInt(card.dataset.price) || 0;
+                    const keywords = card.dataset.keywords || '';
+
+
+                    const priceMatch = price >= minPrice && price <= maxPrice;
+
+
+                    let amenitiesMatch = true;
+                    if (selectedAmenities.length > 0) {
+                        amenitiesMatch = selectedAmenities.some(amenity => keywords.includes(amenity));
+                    }
+
+
+
+
+                    if (priceMatch && amenitiesMatch) {
+                        link.style.display = 'block';
+                        card.style.animation = 'fadeInUp 0.5s ease';
+                        visibleCount++;
+                    } else {
+                        link.style.display = 'none';
+                    }
+                });
+
+                console.log(`Filter complete. Visible: ${visibleCount} listings`);
+
+
+                filterPanel.classList.remove('active');
+
+
+                updateNoResultsMessage(visibleCount, 'No properties match your filters');
+            });
+
+
+            clearFiltersBtn.addEventListener('click', () => {
+                console.log('Clearing filters...');
+
+
+                document.getElementById('min-price').value = 0;
+                document.getElementById('max-price').value = 50000;
+                document.getElementById('bedrooms-count').textContent = '0';
+                document.getElementById('beds-count').textContent = '0';
+                document.getElementById('guests-count').textContent = '0';
+                document.querySelectorAll('.amenity-filter').forEach(cb => cb.checked = false);
+
+
+                allListingCards.forEach(card => {
+                    const link = card.closest('.listing-link');
+                    link.style.display = 'block';
+                });
+
+
+                const noResults = document.getElementById('no-results-message');
+                if (noResults) noResults.remove();
+
+
+                categoryFilters.forEach(f => f.classList.remove('active'));
+            });
+
+
+            function updateNoResultsMessage(count, message) {
+                const noResults = document.getElementById('no-results-message');
+                if (count === 0) {
+                    if (!noResults) {
+                        const msg = document.createElement('div');
+                        msg.id = 'no-results-message';
+                        msg.className = 'no-results-message';
+                        msg.innerHTML = `
+                            <i class="fa-solid fa-filter-circle-xmark"></i>
+                            <h3>${message}</h3>
+                            <p>Try adjusting your filters or search criteria</p>
+                        `;
+                        document.querySelector('.row').appendChild(msg);
+                    }
+                } else if (noResults) {
+                    noResults.remove();
+                }
+            }
+        </script>
+
+    </body>

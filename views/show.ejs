@@ -1,92 +1,639 @@
 <% layout("/boilerplate") %>
-<body>
-<% if (success && success.length > 0) { %>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <%= success[0] %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-<% } %>
-<% if (error && error.length > 0) { %>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <%= error[0] %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-<% } %>
 
-<h1>Listing Details</h1>
+    <body>
 
-<div class="card">
-    <img src="<%= list.image.url || 'https://images.unsplash.com/photo-1518684079-3c830dcef090?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZHViYWl8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60' %>" alt="Listing Image">
-    <ul><strong>Place:</strong> <%= list.title %></ul>
-    <p><strong>Owner:</strong> <%= list.owner.username %></p>
-    <p class="description"><strong>Description:</strong> <%- list.description.replace(/\n/g, "<br>") %></p>
-    <ul><strong>Price:</strong> ₹<%= list.price %></ul>
-    <ul><strong>Location:</strong> <%= list.location %></ul>
-    <ul><strong>Country:</strong> <%= list.country %></ul>
 
-    <% if (currentUser && list.owner.equals(currentUser._id)) { %>
-        <div class="button-group">
-            <form action="/listings/<%= list._id %>/EDIT">
-                <button>EDIT</button>
-            </form>
-            <form action="/listings/<%= list._id %>?_method=DELETE" method="POST">
-                <button type="submit">DELETE</button>
-            </form>
-        </div>
-    <% } %>
-</div>
+        <div class="show-container">
+            <div class="row">
+                <div class="col-8 offset-2">
+                    <div class="title-share-row">
+                        <h1 class="listing-title-main">
+                            <%= list.title %>
+                        </h1>
+                        <button class="share-btn" id="share-listing">
+                            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                            <span>Share</span>
+                        </button>
+                    </div>
+                    
+                    <div class="image-gallery-grid">
+                        <%
+                            galleryImages=[ list.image.url
+                            || 'https://images.unsplash.com/photo-1518684079-3c830dcef090'
+                            , 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80'
+                            , 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80'
+                            , 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80'
+                            , 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=800&q=80' ]; %>
 
-<h2>Reviews</h2>
-<% if (list.reviews.length === 0) { %>
-    <p>No reviews yet. Be the first to leave one!</p>
-<% } %>
+                            <div class="gallery-main-image" onclick="openLightbox(0)">
+                                <img src="<%= galleryImages[0] %>" alt="Main listing image" loading="lazy">
+                                <div class="gallery-overlay">
+                                    <i class="fa-solid fa-expand"></i>
+                                    <span>View all photos</span>
+                                </div>
+                            </div>
 
-<div class="row">
-    <% for (let review of list.reviews) { %>
-        <div class="col-md-6">
-            <div class="review-card text-center">
-                <% if (review.author) { %>
-                    <ul><strong>Reviewer:</strong> <%= review.author.username %></ul>
-                <% } %>
-                <ul><strong>Comment:</strong> <%= review.comment %></ul>
-                <p class="starability-result" data-rating="<%= review.rating %>">
-                    Rated: <%= review.rating %> stars
-                </p>
+                            <div class="gallery-thumbnails">
+                                <% for (let i=1; i < Math.min(5, galleryImages.length); i++) { %>
+                                    <div class="gallery-thumbnail" onclick="openLightbox(<%= i %>)">
+                                        <img src="<%= galleryImages[i] %>" alt="Property image <%= i + 1 %>"
+                                            loading="lazy">
+                                        <% if (i===4 && galleryImages.length> 5) { %>
+                                            <div class="gallery-more-overlay">
+                                                <i class="fa-solid fa-images"></i>
+                                                <span>+<%= galleryImages.length - 5 %> more</span>
+                                            </div>
+                                            <% } %>
+                                    </div>
+                                    <% } %>
+                            </div>
+                    </div>
 
-                <% if (currentUser && review.author && review.author._id.equals(currentUser._id)) { %>
-                    <form method="POST" action="/listings/<%= list._id %>/reviews/<%= review._id %>?_method=DELETE">
-                        <button type="submit">Delete</button>
-                    </form>
-                <% } %>
+                    
+                    <div id="lightbox-modal" class="lightbox-modal">
+                        <div class="lightbox-header">
+                            <button class="lightbox-close" onclick="closeLightbox()">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                            <div class="lightbox-counter">
+                                <span id="lightbox-current">1</span> / <span id="lightbox-total">
+                                    <%= galleryImages.length %>
+                                </span>
+                            </div>
+                            <div class="lightbox-actions">
+                                <button class="lightbox-action-btn" onclick="toggleZoom()">
+                                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                                </button>
+                                <button class="lightbox-action-btn" onclick="shareLightboxImage()">
+                                    <i class="fa-solid fa-share-nodes"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="lightbox-content">
+                            <button class="lightbox-nav lightbox-prev" onclick="navigateLightbox(-1)">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+
+                            <div class="lightbox-image-container">
+                                <img id="lightbox-image" src="" alt="Gallery image" class="lightbox-image">
+                            </div>
+
+                            <button class="lightbox-nav lightbox-next" onclick="navigateLightbox(1)">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+
+                        <div class="lightbox-thumbnails">
+                            <% galleryImages.forEach((img, index)=> { %>
+                                <div class="lightbox-thumb <%= index === 0 ? 'active' : '' %>"
+                                    onclick="goToImage(<%= index %>)">
+                                    <img src="<%= img %>" alt="Thumbnail <%= index + 1 %>">
+                                </div>
+                                <% }) %>
+                        </div>
+                    </div>
+
+                    <script>
+
+                        const galleryImages = <%= JSON.stringify(galleryImages) %>;
+                        let currentImageIndex = 0;
+                        let isZoomed = false;
+
+                        function openLightbox(index) {
+                            currentImageIndex = index;
+                            const modal = document.getElementById('lightbox-modal');
+                            const img = document.getElementById('lightbox-image');
+
+                            modal.classList.add('active');
+                            document.body.style.overflow = 'hidden';
+                            updateLightboxImage();
+                        }
+
+                        function closeLightbox() {
+                            const modal = document.getElementById('lightbox-modal');
+                            modal.classList.remove('active');
+                            document.body.style.overflow = 'auto';
+                            isZoomed = false;
+                            document.getElementById('lightbox-image').classList.remove('zoomed');
+                        }
+
+                        function navigateLightbox(direction) {
+                            currentImageIndex = (currentImageIndex + direction + galleryImages.length) % galleryImages.length;
+                            updateLightboxImage();
+                        }
+
+                        function goToImage(index) {
+                            currentImageIndex = index;
+                            updateLightboxImage();
+                        }
+
+                        function updateLightboxImage() {
+                            const img = document.getElementById('lightbox-image');
+                            const currentCounter = document.getElementById('lightbox-current');
+
+
+                            img.style.opacity = '0';
+
+                            setTimeout(() => {
+                                img.src = galleryImages[currentImageIndex];
+                                currentCounter.textContent = currentImageIndex + 1;
+
+
+                                document.querySelectorAll('.lightbox-thumb').forEach((thumb, i) => {
+                                    thumb.classList.toggle('active', i === currentImageIndex);
+                                });
+
+
+                                img.style.opacity = '1';
+                            }, 150);
+                        }
+
+                        function toggleZoom() {
+                            const img = document.getElementById('lightbox-image');
+                            isZoomed = !isZoomed;
+                            img.classList.toggle('zoomed');
+                        }
+
+                        function shareLightboxImage() {
+                            const toast = document.createElement("div");
+                            toast.className = "toast-notification success";
+                            toast.innerHTML = `<i class="fa-solid fa-link"></i><span>Image link copied!</span>`;
+                            document.querySelector(".toast-container").appendChild(toast);
+
+                            setTimeout(() => {
+                                toast.style.opacity = '0';
+                                toast.style.transform = 'translateX(100%)';
+                                setTimeout(() => toast.remove(), 500);
+                            }, 2000);
+                        }
+
+
+                        document.addEventListener('keydown', (e) => {
+                            const modal = document.getElementById('lightbox-modal');
+                            if (!modal.classList.contains('active')) return;
+
+                            if (e.key === 'ArrowLeft') navigateLightbox(-1);
+                            else if (e.key === 'ArrowRight') navigateLightbox(1);
+                            else if (e.key === 'Escape') closeLightbox();
+                        });
+
+
+                        document.getElementById('lightbox-modal').addEventListener('click', (e) => {
+                            if (e.target.id === 'lightbox-modal') {
+                                closeLightbox();
+                            }
+                        });
+                    </script>
+
+                    <div class="listing-details">
+                        <div class="left-column">
+                            <div class="host-info">
+                                <p>Hosted by <b>
+                                        <%= list.owner ? list.owner.username : 'Marnani Host' %>
+                                    </b></p>
+                                <p>
+                                    <%= list.location %>, <%= list.country %>
+                                </p>
+                            </div>
+
+                            
+                            <div class="property-highlights">
+                                <div class="highlight-item">
+                                    <i class="fa-solid fa-bed"></i>
+                                    <div>
+                                        <strong>
+                                            <%= list.bedrooms || 1 %>
+                                        </strong>
+                                        <span>
+                                            <%= (list.bedrooms || 1)===1 ? 'Bedroom' : 'Bedrooms' %>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="highlight-item">
+                                    <i class="fa-solid fa-moon"></i>
+                                    <div>
+                                        <strong>
+                                            <%= list.beds || 1 %>
+                                        </strong>
+                                        <span>
+                                            <%= (list.beds || 1)===1 ? 'Bed' : 'Beds' %>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="highlight-item">
+                                    <i class="fa-solid fa-user-group"></i>
+                                    <div>
+                                        <strong>
+                                            <%= list.maxGuests || 2 %>
+                                        </strong>
+                                        <span>
+                                            <%= (list.maxGuests || 2)===1 ? 'Guest' : 'Guests' %>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="description">
+                                <p><%- list.description.replace(/\n/g, "<br>" ) %></p>
+                            </div>
+
+                            
+                            <div class="amenities-section">
+                                <h3>What this place offers</h3>
+                                <div class="amenities-grid">
+                                    <div class="amenity-item">
+                                        <i class="fa-solid fa-wifi"></i>
+                                        <span>WiFi</span>
+                                    </div>
+                                    <div class="amenity-item">
+                                        <i class="fa-solid fa-kitchen-set"></i>
+                                        <span>Kitchen</span>
+                                    </div>
+                                    <div class="amenity-item">
+                                        <i class="fa-solid fa-car"></i>
+                                        <span>Free parking</span>
+                                    </div>
+                                    <div class="amenity-item">
+                                        <i class="fa-solid fa-tv"></i>
+                                        <span>TV</span>
+                                    </div>
+                                    <div class="amenity-item">
+                                        <i class="fa-solid fa-wind"></i>
+                                        <span>Air conditioning</span>
+                                    </div>
+                                    <div class="amenity-item">
+                                        <i class="fa-solid fa-dumbbell"></i>
+                                        <span>Gym</span>
+                                    </div>
+                                    <div class="amenity-item">
+                                        <i class="fa-solid fa-person-swimming"></i>
+                                        <span>Pool</span>
+                                    </div>
+                                    <div class="amenity-item">
+                                        <i class="fa-solid fa-hot-tub-person"></i>
+                                        <span>Hot tub</span>
+                                    </div>
+                                    <div class="amenity-item">
+                                        <i class="fa-solid fa-fire-burner"></i>
+                                        <span>Heating</span>
+                                    </div>
+                                    <div class="amenity-item">
+                                        <i class="fa-solid fa-shirt"></i>
+                                        <span>Washer</span>
+                                    </div>
+                                </div>
+                                <button class="btn-show-all-amenities">
+                                    Show all amenities
+                                </button>
+                            </div>
+
+                            <% if (currentUser && list.owner && list.owner.equals(currentUser._id)) { %>
+                                <div class="d-flex gap-3 mb-4">
+                                    <form action="/listings/<%= list._id %>/edit">
+                                        <button class="btn btn-dark">Edit Listing</button>
+                                    </form>
+                                    <form action="/listings/<%= list._id %>?_method=DELETE" method="POST">
+                                        <button class="btn btn-danger">Delete Listing</button>
+                                    </form>
+                                </div>
+                                <% } %>
+                        </div>
+
+                        <div class="right-column">
+                            <div class="booking-card">
+                                
+                                <div class="card-header-price">
+                                    <% if (list.price) { %>
+                                        <h3>₹<%= list.price.toLocaleString("en-IN") %> <span class="night-label">/
+                                                    night</span></h3>
+                                        <div class="rating-badge">
+                                            <% if (list.reviews && list.reviews.length> 0) { %>
+                                                <% let sum=0; for (let r of list.reviews) { sum +=r.rating; } let
+                                                    avg=(sum / list.reviews.length).toFixed(1); %>
+                                                    <i class="fa-solid fa-star"></i>
+                                                    <span>
+                                                        <%= avg %> · <%= list.reviews.length %> reviews
+                                                    </span>
+                                                    <% } else { %>
+                                                        <i class="fa-regular fa-star"></i>
+                                                        <span>New listing</span>
+                                                        <% } %>
+                                        </div>
+                                        <% } else { %>
+                                            <h3>Contact for Price</h3>
+                                            <% } %>
+                                </div>
+
+                                
+                                <div class="booking-property-info">
+                                    <div class="info-item">
+                                        <i class="fa-solid fa-door-open"></i>
+                                        <span>
+                                            <%= list.bedrooms || 1 %>
+                                                <%= (list.bedrooms || 1)===1 ? 'Bedroom' : 'Bedrooms' %>
+                                        </span>
+                                    </div>
+                                    <div class="info-item">
+                                        <i class="fa-solid fa-bed"></i>
+                                        <span>
+                                            <%= list.beds || 1 %>
+                                                <%= (list.beds || 1)===1 ? 'Bed' : 'Beds' %>
+                                        </span>
+                                    </div>
+                                    <div class="info-item">
+                                        <i class="fa-solid fa-users"></i>
+                                        <span>Up to <%= list.maxGuests || 2 %> guests</span>
+                                    </div>
+                                </div>
+
+                                
+                                <div class="booking-section">
+                                    <label class="booking-label">Number of guests</label>
+                                    <div class="guests-input-enhanced" id="guests-input-widget">
+                                        <div class="guests-display-content">
+                                            <i class="fa-solid fa-user-group"></i>
+                                            <span id="guests-display">1 guest</span>
+                                        </div>
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </div>
+                                </div>
+
+                                
+                                <div class="guest-selector-dropdown" id="guest-selector" style="display: none;">
+                                    <div class="guest-row-selector">
+                                        <div>
+                                            <strong>Adults</strong>
+                                            <p class="guest-desc">Ages 13+</p>
+                                        </div>
+                                        <div class="guest-counter-widget">
+                                            <button class="guest-btn-widget"
+                                                onclick="changeGuests('adults', -1)">-</button>
+                                            <span id="adults-widget">1</span>
+                                            <button class="guest-btn-widget"
+                                                onclick="changeGuests('adults', 1)">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="guest-row-selector">
+                                        <div>
+                                            <strong>Children</strong>
+                                            <p class="guest-desc">Ages 2-12</p>
+                                        </div>
+                                        <div class="guest-counter-widget">
+                                            <button class="guest-btn-widget"
+                                                onclick="changeGuests('children', -1)">-</button>
+                                            <span id="children-widget">0</span>
+                                            <button class="guest-btn-widget"
+                                                onclick="changeGuests('children', 1)">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="guest-row-selector">
+                                        <div>
+                                            <strong>Infants</strong>
+                                            <p class="guest-desc">Under 2</p>
+                                        </div>
+                                        <div class="guest-counter-widget">
+                                            <button class="guest-btn-widget"
+                                                onclick="changeGuests('infants', -1)">-</button>
+                                            <span id="infants-widget">0</span>
+                                            <button class="guest-btn-widget"
+                                                onclick="changeGuests('infants', 1)">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                
+                                <button class="btn btn-primary btn-reserve-enhanced">
+                                    <i class="fa-solid fa-calendar-check"></i>
+                                    <span>Check Availability</span>
+                                </button>
+                                <p class="no-charge-text">You won't be charged yet</p>
+
+                                
+                                <div class="booking-features">
+                                    <div class="feature-item">
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                        <span>Secure booking</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                        <span>Free cancellation</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fa-solid fa-headset"></i>
+                                        <span>24/7 support</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="col-8 offset-2 mb-3">
+                        <h3>Where you'll be</h3>
+                        <a href="https://www.google.com/maps/search/?api=1&query=<%= list.location %>" target="_blank"
+                            style="text-decoration: none;">
+                            <div class="map-container">
+                                <div class="map-placeholder">
+                                    <i class="fa-solid fa-map-location-dot"></i>
+                                    <p>Exact location provided after booking</p>
+                                    <div class="map-bg"></div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <hr>
+
+                    <div class="reviews-section mt-4">
+                        <h3><i class="fa-solid fa-star"></i> Reviews</h3>
+
+                        <% if (list.reviews.length===0) { %>
+                            <p class="text-muted">No reviews yet. Be the first to leave one!</p>
+                            <% } %>
+
+                                <div class="row">
+                                    <% for (let review of list.reviews) { %>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="review-card">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <% if (review.author) { %>
+                                                            <h5 class="mb-1">
+                                                                <%= review.author.username %>
+                                                            </h5>
+                                                            <% } %>
+                                                                <p class="starability-result"
+                                                                    data-rating="<%= review.rating %>">
+                                                                </p>
+                                                    </div>
+                                                    <% if (currentUser && review.author &&
+                                                        review.author._id.equals(currentUser._id)) { %>
+                                                        <form method="POST"
+                                                            action="/listings/<%= list._id %>/reviews/<%= review._id %>?_method=DELETE">
+                                                            <button class="btn btn-sm btn-outline-danger"><i
+                                                                    class="fa-solid fa-trash"></i></button>
+                                                        </form>
+                                                        <% } %>
+                                                </div>
+                                                <p class="mt-2 mb-0">
+                                                    <%= review.comment %>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <% } %>
+                                </div>
+
+                                <% if (currentUser) { %>
+                                    <div class="mt-4">
+                                        <h4>Leave a Review</h4>
+                                        <form action="/listings/<%= list._id %>/reviews" method="POST" novalidate
+                                            class="needs-validation">
+                                            <div class="mb-3 mt-3">
+                                                <label for="rating" class="form-label">Rating</label>
+                                                <fieldset class="starability-slot">
+                                                    <input type="radio" id="no-rate" class="input-no-rate"
+                                                        name="review[rating]" value="1" checked
+                                                        aria-label="No rating." />
+                                                    <input type="radio" id="first-rate1" name="review[rating]"
+                                                        value="1" />
+                                                    <label for="first-rate1" title="Terrible">1
+                                                        star</label>
+                                                    <input type="radio" id="first-rate2" name="review[rating]"
+                                                        value="2" />
+                                                    <label for="first-rate2" title="Not good">2
+                                                        stars</label>
+                                                    <input type="radio" id="first-rate3" name="review[rating]"
+                                                        value="3" />
+                                                    <label for="first-rate3" title="Average">3
+                                                        stars</label>
+                                                    <input type="radio" id="first-rate4" name="review[rating]"
+                                                        value="4" />
+                                                    <label for="first-rate4" title="Very good">4
+                                                        stars</label>
+                                                    <input type="radio" id="first-rate5" name="review[rating]"
+                                                        value="5" />
+                                                    <label for="first-rate5" title="Amazing">5
+                                                        stars</label>
+                                                </fieldset>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="comment" class="form-label">Comments</label>
+                                                <textarea name="review[comment]" id="comment" cols="30" rows="5"
+                                                    class="form-control" required></textarea>
+                                            </div>
+
+                                            <button class="btn btn-outline-dark">Submit Review</button>
+                                        </form>
+                                    </div>
+                                    <% } %>
+                    </div>
+                </div>
             </div>
         </div>
-    <% } %>
-</div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+            crossorigin="anonymous"></script>
 
-<% if (currentUser) { %>
-    <div class="card col-5 mb-3 ms-3">
-        <h3>Leave a Review</h3>
-        <form action="/listings/<%= list._id %>/reviews" method="POST">
-            <fieldset class="starability-slot">
-                <legend>Rating:</legend>
-                <input type="radio" id="no-rate" class="input-no-rate" name="review[rating]" value="0" checked aria-label="No rating." />
-                <input type="radio" id="first-rate1" name="review[rating]" value="1" />
-                <label for="first-rate1" title="Terrible">1 star</label>
-                <input type="radio" id="first-rate2" name="review[rating]" value="2" />
-                <label for="first-rate2" title="Not good">2 stars</label>
-                <input type="radio" id="first-rate3" name="review[rating]" value="3" />
-                <label for="first-rate3" title="Average">3 stars</label>
-                <input type="radio" id="first-rate4" name="review[rating]" value="4" />
-                <label for="first-rate4" title="Very good">4 stars</label>
-                <input type="radio" id="first-rate5" name="review[rating]" value="5" />
-                <label for="first-rate5" title="Amazing">5 stars</label>
-            </fieldset>
+        <script>
 
-            <label for="comments">Comments</label>
-            <textarea name="review[comment]" id="comments" cols="30" rows="5" required></textarea>
+            let adultsCount = 1;
+            let childrenCount = 0;
+            let infantsCount = 0;
 
-            <button type="submit">Submit</button>
-        </form>
-    </div>
-<% } %>
-</body>
+
+            document.getElementById('guests-input-widget').addEventListener('click', function (e) {
+                e.stopPropagation();
+                const selector = document.getElementById('guest-selector');
+                selector.style.display = selector.style.display === 'none' ? 'block' : 'none';
+            });
+
+
+            document.addEventListener('click', function (e) {
+                const guestsInput = document.getElementById('guests-input-widget');
+                const selector = document.getElementById('guest-selector');
+                if (!guestsInput.contains(e.target) && !selector.contains(e.target)) {
+                    selector.style.display = 'none';
+                }
+            });
+
+
+            function changeGuests(type, delta) {
+                if (type === 'adults') {
+                    adultsCount = Math.max(1, adultsCount + delta);
+                    document.getElementById('adults-widget').textContent = adultsCount;
+                } else if (type === 'children') {
+                    childrenCount = Math.max(0, childrenCount + delta);
+                    document.getElementById('children-widget').textContent = childrenCount;
+                } else if (type === 'infants') {
+                    infantsCount = Math.max(0, infantsCount + delta);
+                    document.getElementById('infants-widget').textContent = infantsCount;
+                }
+                updateGuestDisplay();
+            }
+
+
+            function updateGuestDisplay() {
+                const total = adultsCount + childrenCount + infantsCount;
+                const guestText = total === 1 ? '1 guest' : `${total} guests`;
+                document.getElementById('guests-display').textContent = guestText;
+            }
+
+
+            document.querySelector(".btn-reserve-enhanced").addEventListener("click", function () {
+                const pricePerNight = <%= list.price || 0 %>;
+                const total = adultsCount + childrenCount + infantsCount;
+
+
+                const toast = document.createElement("div");
+                toast.className = "toast-notification success";
+                toast.innerHTML = `<i class="fa-solid fa-check-circle"></i><span>Request sent for ${total} ${total === 1 ? 'guest' : 'guests'}! Host will respond soon.</span>`;
+                document.querySelector(".toast-container").appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 500);
+                }, 4000);
+            });
+
+
+            document.querySelector('.share-btn').addEventListener('click', async function () {
+                const url = window.location.href;
+                const title = document.querySelector('.listing-title-main').textContent;
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: title,
+                            url: url
+                        });
+                    } catch (err) {
+
+                    }
+                } else {
+
+                    navigator.clipboard.writeText(url).then(function () {
+                        const toast = document.createElement("div");
+                        toast.className = "toast-notification success";
+                        toast.innerHTML = `<i class="fa-solid fa-link"></i><span>Link copied to clipboard!</span>`;
+                        document.querySelector(".toast-container").appendChild(toast);
+
+                        setTimeout(() => {
+                            toast.style.opacity = '0';
+                            toast.style.transform = 'translateX(100%)';
+                            setTimeout(() => toast.remove(), 500);
+                        }, 2000);
+                    });
+                }
+            });
+        </script>
+
+    </body>
+
+    </html>
+    ```
